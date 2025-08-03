@@ -1,0 +1,15 @@
+export const categories = [
+  { name: "Politik", slug: "politik" },
+  { name: "Ekonomi", slug: "ekonomi" },
+  { name: "Olahraga", slug: "olahraga" },
+  { name: "Teknologi", slug: "teknologi" },
+  { name: "Internasional", slug: "internasional" },
+  { name: "Nasional", slug: "nasional" },
+  { name: "Kesehatan", slug: "kesehatan" },
+  { name: "Hiburan", slug: "hiburan" },
+  { name: "Pendidikan", slug: "pendidikan" },
+  { name: "Otomotif", slug: "otomotif" },
+  { name: "Langsa", slug: "langsa" },
+  { name: "Loker", slug: "loker" },
+  { name: "Zodiak", slug: "zodiak" },
+]
