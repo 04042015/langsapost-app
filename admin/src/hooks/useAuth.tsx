@@ -96,18 +96,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
   const redirectUrl = import.meta.env.VITE_SITE_URL;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-      },
+const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: redirectUrl,
+    data: {
+      full_name: fullName,
     },
-  });
+  },
+});
 
   if (!error && data.user) {
     const { error: profileError } = await supabase
