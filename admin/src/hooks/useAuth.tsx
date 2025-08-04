@@ -103,7 +103,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email,
     password,
     options: {
-      emailRedirectTo: redirectUrl,
       data: {
         full_name: fullName,
       },
