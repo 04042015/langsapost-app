@@ -96,30 +96,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const redirectUrl = import.meta.env.VITE_SITE_URL;
-
-const { data, error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    data: {
-      full_name: fullName,
+ const signUp = async (email: string, password: string, fullName: string) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+      },
     },
-  },
-});
+  });
 
   if (!error && data.user) {
     const { error: profileError } = await supabase
-      .from('profiles')
+      .from("profiles")
       .insert({
         user_id: data.user.id,
         email,
         full_name: fullName,
-        role: 'penulis',
+        role: "penulis",
       });
 
     if (profileError) {
-      console.error('Error creating profile:', profileError);
+      console.error("Error creating profile:", profileError);
     }
 
     toast({
@@ -130,8 +129,6 @@ const { data, error } = await supabase.auth.signUp({
 
   return { error };
 };
-
-
 
   const signOut = async () => {
     await supabase.auth.signOut();
