@@ -96,39 +96,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
- const signUp = async (email: string, password: string, fullName: string) => {
+const signUp = async (email: string, password: string, fullName: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
+        role: 'penulis',
       },
+      emailRedirectTo: import.meta.env.VITE_SITE_URL,
     },
   });
 
-  if (!error && data.user) {
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert({
-        user_id: data.user.id,
-        email,
-        full_name: fullName,
-        role: "penulis",
-      });
+  if (error) {
+    console.error("Error during sign up:", error.message);
+    toast({
+      title: "Registrasi gagal",
+      description: error.message,
+      variant: "destructive",
+    });
+    return { error };
+  }
+
+  // Jika user berhasil dibuat dan login otomatis
+  if (data.user) {
+    const { error: profileError } = await supabase.from("profiles").insert({
+      user_id: data.user.id,
+      email,
+      full_name: fullName,
+      role: 'penulis',
+    });
 
     if (profileError) {
-      console.error("Error creating profile:", profileError);
+      console.error("Gagal membuat profil:", profileError.message);
+      toast({
+        title: "Gagal menyimpan profil",
+        description: profileError.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Registrasi berhasil",
+        description: "Akun Anda berhasil dibuat!",
+      });
     }
-
-    toast({
-      title: "Registrasi berhasil",
-      description: "Akun Anda telah dibuat!",
-    });
   }
 
   return { error };
 };
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
