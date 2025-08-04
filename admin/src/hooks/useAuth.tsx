@@ -101,16 +101,18 @@ const signUp = async (email: string, password: string, fullName: string) => {
   console.log('Redirecting to:', redirectUrl); // debug log untuk pastikan nilainya benar
 
   const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: redirectUrl,
-      data: {
-        full_name: fullName,
-        role: 'penulis',
-      },
+  email,
+  password,
+  options: {
+    emailRedirectTo: import.meta.env.VITE_SITE_URL,
+    data: {
+      full_name: fullName,
+      role: 'penulis',
+      uid: supabase.auth.getUser().data?.user?.id // tambahkan uid
     },
-  });
+  },
+});
+
 
   if (error) {
     console.error("Error during sign up:", error.message);
