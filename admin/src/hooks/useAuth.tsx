@@ -88,42 +88,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
+  // Ganti localhost dengan domain Netlify kamu
+  const redirectUrl = `https://admin-langsapost.netlify.app/`;
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: redirectUrl,
+      data: {
+        full_name: fullName,
       },
-    });
+    },
+  });
 
-    if (!error && data.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: data.user.id,
-          email,
-          full_name: fullName,
-          role: 'penulis',
-        });
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-      }
-
-      toast({
-        title: "Registrasi berhasil",
-        description: "Akun Anda telah dibuat!",
+  if (!error && data.user) {
+    // Buat entri di tabel profiles
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: data.user.id,
+        email,
+        full_name: fullName,
+        role: 'penulis',
       });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
     }
 
-    return { error };
-  };
+    toast({
+      title: "Registrasi berhasil",
+      description: "Akun Anda telah dibuat!",
+    });
+  }
+
+  return { error };
+};
 
   const signOut = async () => {
     await supabase.auth.signOut();
