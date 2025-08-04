@@ -39,16 +39,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          // Fetch user profile
           setTimeout(async () => {
-            const { data: profile } = await supabase
+            const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
               .single();
-            
+
+            if (error || !profile) {
+              // Logout otomatis jika profile tidak ditemukan
+              await supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setProfile(null);
+              setLoading(false);
+              return;
+            }
+
             setProfile(profile);
             setLoading(false);
           }, 0);
@@ -88,43 +97,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-  // Ganti localhost dengan domain Netlify kamu
-  const redirectUrl = `https://admin-langsapost.netlify.app/`;
+    const redirectUrl = `https://admin-langsapost.netlify.app/`;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: redirectUrl,
-      data: {
-        full_name: fullName,
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+        },
       },
-    },
-  });
+    });
 
-  if (!error && data.user) {
-    // Buat entri di tabel profiles
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: data.user.id,
-        email,
-        full_name: fullName,
-        role: 'penulis',
+    if (!error && data.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: data.user.id,
+          email,
+          full_name: fullName,
+          role: 'penulis',
+        });
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+      }
+
+      toast({
+        title: "Registrasi berhasil",
+        description: "Akun Anda telah dibuat!",
       });
-
-    if (profileError) {
-      console.error('Error creating profile:', profileError);
     }
 
-    toast({
-      title: "Registrasi berhasil",
-      description: "Akun Anda telah dibuat!",
-    });
-  }
-
-  return { error };
-};
+    return { error };
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
