@@ -98,21 +98,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 const signUp = async (email: string, password: string, fullName: string) => {
   const redirectUrl = import.meta.env.VITE_SITE_URL;
-  console.log('Redirecting to:', redirectUrl); // debug log untuk pastikan nilainya benar
+
+  console.log('Redirecting to:', redirectUrl); // Debug log
 
   const { data, error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    emailRedirectTo: import.meta.env.VITE_SITE_URL,
-    data: {
-      full_name: fullName,
-      role: 'penulis',
-      uid: supabase.auth.getUser().data?.user?.id // tambahkan uid
+    email,
+    password,
+    options: {
+      emailRedirectTo: redirectUrl,
+      data: {
+        full_name: fullName,
+        role: 'penulis',
+      },
     },
-  },
-});
-
+  });
 
   if (error) {
     console.error("Error during sign up:", error.message);
@@ -124,10 +123,9 @@ const signUp = async (email: string, password: string, fullName: string) => {
     return { error };
   }
 
-  // Jika user berhasil dibuat dan login otomatis
   if (data.user) {
     const { error: profileError } = await supabase.from("profiles").insert({
-      user_id: data.user.id,
+      uid: data.user.id, // Pastikan ini sesuai nama kolom di tabel
       email,
       full_name: fullName,
       role: 'penulis',
