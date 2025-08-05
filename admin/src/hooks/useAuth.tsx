@@ -117,14 +117,23 @@ const signUp = async (email: string, password: string, fullName: string) => {
   }
 
   if (data.user) {
-    await supabase.auth.getSession(); // pastikan session aktif
+    const userId = data.user?.id;
 
-    const { error: profileError } = await supabase.from("profiles").insert({
-      user_id: data.user.id,
-      email,
-      full_name: fullName,
-      role: 'penulis',
-    });
+if (!userId) {
+  toast({
+    title: "Gagal menyimpan profil",
+    description: "User ID tidak ditemukan.",
+    variant: "destructive",
+  });
+  return { error: new Error("User ID kosong") };
+}
+
+const { error: profileError } = await supabase.from("profiles").insert({
+  user_id: userId,
+  email,
+  full_name: fullName,
+  role: 'penulis',
+});
 
     if (profileError) {
       toast({
@@ -140,6 +149,12 @@ const signUp = async (email: string, password: string, fullName: string) => {
     }
   }
 
+
+
+
+
+
+  
   return { error };
 };
 
