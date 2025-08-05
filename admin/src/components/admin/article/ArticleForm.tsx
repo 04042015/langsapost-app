@@ -275,17 +275,6 @@ export function ArticleForm() {
               Simpan sebagai Draft
             </Button>
           </div>
-
-          {/* DEBUG */}
-          {!loadingCategories && (
-            <div className="bg-yellow-50 p-4 rounded text-sm text-gray-800 border border-yellow-300">
-              <h2 className="font-semibold mb-2">DEBUG KATEGORI:</h2>
-              <pre>{JSON.stringify(categories, null, 2)}</pre>
-              <hr className="my-2" />
-              <h2 className="font-semibold mb-2">DEBUG FORM VALUES:</h2>
-              <pre>{JSON.stringify(formik.values, null, 2)}</pre>
-            </div>
-          )}
         </div>
       </MultiLangTabs>
     </form>
