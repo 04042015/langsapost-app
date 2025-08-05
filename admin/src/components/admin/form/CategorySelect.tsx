@@ -24,9 +24,6 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
   disabled = false,
 }) => {
   const isEmpty = categories.length === 0;
-  <div className="mt-2 text-xs text-gray-600">
-  Current selected ID: <code>{value}</code>
-</div>
 
   return (
     <div className="mb-4">
@@ -37,16 +34,10 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
         disabled={disabled || isEmpty}
       >
         <SelectTrigger className="w-full">
-  <SelectValue
-    placeholder={isEmpty ? 'Kategori belum tersedia' : 'Pilih kategori'}
-  />
-  {/* DEBUG: Tampilkan value */}
-  {value && (
-    <span className="text-xs ml-2 text-gray-500">
-      (ID: {value})
-    </span>
-  )}
-</SelectTrigger>
+          <SelectValue
+            placeholder={isEmpty ? 'Kategori belum tersedia' : 'Pilih kategori'}
+          />
+        </SelectTrigger>
         <SelectContent position="popper" avoidCollisions={false}>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.id}>
@@ -60,13 +51,6 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
         <p className="text-sm text-red-500 mt-1">
           Tidak ada kategori tersedia.
         </p>
-      )}
-
-      {/* DEBUG LOG (development only) */}
-      {process.env.NODE_ENV !== 'production' && (
-        <pre className="text-xs text-left bg-gray-100 p-2 mt-4 rounded overflow-x-auto">
-{JSON.stringify({ categories, value }, null, 2)}
-        </pre>
       )}
     </div>
   );
