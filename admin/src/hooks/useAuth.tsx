@@ -124,12 +124,15 @@ const signUp = async (email: string, password: string, fullName: string) => {
   }
 
   if (data.user) {
-    const { error: profileError } = await supabase.from("profiles").insert({
-  user_id: data.user.id, // ✅ Ganti uid jadi user_id
-  email,
-  full_name: fullName,
-  role: 'penulis',
-});
+  // Pastikan session aktif agar auth.uid() dikenali Supabase
+  await supabase.auth.getSession();
+
+  const { error: profileError } = await supabase.from("profiles").insert({
+    user_id: data.user.id,
+    email,
+    full_name: fullName,
+    role: 'penulis',
+  });
 
     if (profileError) {
       console.error("Gagal membuat profil:", profileError.message);
