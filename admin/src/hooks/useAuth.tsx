@@ -99,22 +99,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 const signUp = async (email: string, password: string, fullName: string) => {
   const redirectUrl = import.meta.env.VITE_SITE_URL;
 
-  console.log('Redirecting to:', redirectUrl); // Debug log
-
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: redirectUrl,
-      data: {
-        full_name: fullName,
-        role: 'penulis',
-      },
     },
   });
 
   if (error) {
-    console.error("Error during sign up:", error.message);
     toast({
       title: "Registrasi gagal",
       description: error.message,
@@ -124,18 +117,16 @@ const signUp = async (email: string, password: string, fullName: string) => {
   }
 
   if (data.user) {
-  // Pastikan session aktif agar auth.uid() dikenali Supabase
-  await supabase.auth.getSession();
+    await supabase.auth.getSession(); // pastikan session aktif
 
-  const { error: profileError } = await supabase.from("profiles").insert({
-    user_id: data.user.id,
-    email,
-    full_name: fullName,
-    role: 'penulis',
-  });
+    const { error: profileError } = await supabase.from("profiles").insert({
+      user_id: data.user.id,
+      email,
+      full_name: fullName,
+      role: 'penulis',
+    });
 
     if (profileError) {
-      console.error("Gagal membuat profil:", profileError.message);
       toast({
         title: "Gagal menyimpan profil",
         description: profileError.message,
@@ -151,7 +142,6 @@ const signUp = async (email: string, password: string, fullName: string) => {
 
   return { error };
 };
-
 
   const signOut = async () => {
     await supabase.auth.signOut();
