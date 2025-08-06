@@ -4,8 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
-  id: string;
-  user_id: string;
+  id: string; // sama dengan auth.uid()
   email: string;
   full_name: string;
   role: 'admin' | 'editor' | 'penulis';
@@ -33,12 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fungsi untuk mengambil profile user dari tabel `profiles`
+  // Ambil profil user dari tabel profiles
   const fetchProfile = async (userId: string) => {
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
 
     if (error || !profile) {
@@ -54,7 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Listener perubahan auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
@@ -69,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Cek session awal saat pertama kali load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -110,6 +107,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       toast({
+        title: "Registrasi gagal",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+
+    if (data.user) {
+      const userId = data.user.id;
+
+      if (!userId) {
+        toast({
+          title: "Gagal menyimpan profil",
+          description: "User ID tidak ditemukan.",
+          variant: "destructive",
+        });
+        return { error: new Error("User ID kosong") };
+      }
+
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: userId,  // ✅ ini adalah kolom `id`, bukan `user_id`
+        email,
+        full_name: fullName,
+        role: 'penulis',
+      });
+
+      if (profileError) {
+        toast({
+          title: "Gagal menyimpan profil",
+          description: profileError.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registrasi berhasil",
+          description: "Akun Anda berhasil dibuat!",
+        });
+      }
+    }
+
+    return { error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+    toast({
+      title: "Logout berhasil",
+      description: "Sampai jumpa lagi!",
+    });
+  };
+
+  const logActivity = async (type: string, description: string, metadata?: any) => {
+    if (!user) return;
+
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      activity_type: type as any,
+      description,
+      metadata,
+      ip_address: null,
+      user_agent: navigator.userAgent,
+    });
+  };
+
+  const value = {
+    user,
+    profile,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    logActivity,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+        }      toast({
         title: "Registrasi gagal",
         description: error.message,
         variant: "destructive",
