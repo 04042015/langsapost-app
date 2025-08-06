@@ -33,34 +33,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Fungsi untuk mengambil profile user dari tabel `profiles`
+  const fetchProfile = async (userId: string) => {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !profile) {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+    } else {
+      setProfile(profile);
+    }
+
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // Set up auth state listener
+    // Listener perubahan auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          setTimeout(async () => {
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-
-            if (error || !profile) {
-              // Logout otomatis jika profile tidak ditemukan
-              await supabase.auth.signOut();
-              setUser(null);
-              setSession(null);
-              setProfile(null);
-              setLoading(false);
-              return;
-            }
-
-            setProfile(profile);
-            setLoading(false);
-          }, 0);
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
           setLoading(false);
@@ -68,11 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
+    // Cek session awal saat pertama kali load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session) {
+
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
         setLoading(false);
       }
     });
@@ -81,10 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (!error) {
       toast({
@@ -96,67 +97,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-const signUp = async (email: string, password: string, fullName: string) => {
-  const redirectUrl = import.meta.env.VITE_SITE_URL;
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const redirectUrl = import.meta.env.VITE_SITE_URL;
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: redirectUrl,
-    },
-  });
-
-  if (error) {
-    toast({
-      title: "Registrasi gagal",
-      description: error.message,
-      variant: "destructive",
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
-    return { error };
-  }
 
-  if (data.user) {
-    const userId = data.user?.id;
-
-if (!userId) {
-  toast({
-    title: "Gagal menyimpan profil",
-    description: "User ID tidak ditemukan.",
-    variant: "destructive",
-  });
-  return { error: new Error("User ID kosong") };
-}
-
-const { error: profileError } = await supabase.from("profiles").insert({
-  user_id: userId,
-  email,
-  full_name: fullName,
-  role: 'penulis',
-});
-
-    if (profileError) {
+    if (error) {
       toast({
-        title: "Gagal menyimpan profil",
-        description: profileError.message,
+        title: "Registrasi gagal",
+        description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Registrasi berhasil",
-        description: "Akun Anda berhasil dibuat!",
-      });
+      return { error };
     }
-  }
 
+    if (data.user) {
+      const userId = data.user.id;
 
+      if (!userId) {
+        toast({
+          title: "Gagal menyimpan profil",
+          description: "User ID tidak ditemukan.",
+          variant: "destructive",
+        });
+        return { error: new Error("User ID kosong") };
+      }
 
+      const { error: profileError } = await supabase.from("profiles").insert({
+        user_id: userId,
+        email,
+        full_name: fullName,
+        role: 'penulis',
+      });
 
+      if (profileError) {
+        toast({
+          title: "Gagal menyimpan profil",
+          description: profileError.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registrasi berhasil",
+          description: "Akun Anda berhasil dibuat!",
+        });
+      }
+    }
 
-
-  
-  return { error };
-};
+    return { error };
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
