@@ -1,31 +1,30 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { ArticleInput } from '@/lib/validations/articleSchema';
 
-const mapArticlePayload = (input: ArticleInput) => ({
-  title: input.title,
-  slug: input.slug,
-  content: JSON.stringify(input.content),
-  status: input.status,
-  scheduled_at: input.scheduled_at || null,
-  featured_image_url: input.featured_image_url || null,
-  is_breaking_news: input.is_breaking,
-  category_id: input.category_id || null,
-  author_id: input.author_id,
-  meta_title: input.seo_title,
-  meta_description: input.seo_description,
-});
-
 export async function createArticle(payload: ArticleInput) {
-  const mapped = mapArticlePayload(payload);
+  const formattedPayload = {
+    title: payload.title,
+    slug: payload.slug,
+    content: JSON.stringify(payload.content), // pastikan ini string
+    status: payload.status,
+    scheduled_at: payload.scheduled_at || null,
+    featured_image_url: payload.featured_image_url || null,
+    is_breaking_news: payload.is_breaking, // nama kolom disesuaikan
+    category_id: payload.category_id || null,
+    author_id: payload.author_id,
+    meta_title: payload.seo_title || null,
+    meta_description: payload.seo_description || null,
+    canonical_url: payload.canonical_url || null,
+    // tambahkan kolom lain jika perlu
+  };
 
   const { data, error } = await supabase
-    .from('articles')
-    .insert(mapped)
-    .select()
-    .single();
+    .from("articles")
+    .insert([formattedPayload])
+    .select();
 
   if (error) {
-    throw new Error(error.message || 'Gagal menyimpan artikel');
+    throw new Error(error.message);
   }
 
   return data;
