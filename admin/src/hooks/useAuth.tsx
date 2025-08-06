@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
-  id: string; // sama dengan auth.uid()
+  id: string;
   email: string;
   full_name: string;
   role: 'admin' | 'editor' | 'penulis';
@@ -32,7 +32,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Ambil profil user dari tabel profiles
   const fetchProfile = async (userId: string) => {
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -110,6 +109,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Registrasi gagal",
         description: error.message,
         variant: "destructive",
+      });
+      return { error };
+    }
+
+    if (data.user) {
+      const userId = data.user.id;
+
+      if (!userId) {
+        toast({
+          title: "Gagal menyimpan profil",
+          description: "User ID tidak ditemukan.",
+          variant: "destructive",
+        });
+        return { error: new Error("User ID kosong") };
+      }
+
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: userId,
+        email,
+        full_name: fullName,
+        role: 'penulis',
+      });
+
+      if (profileError) {
+        toast({
+          title: "Gagal menyimpan profil",
+          description: profileError.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registrasi berhasil",
+          description: "Akun Anda berhasil dibuat!",
+        });
+      }
+    }
+
+    return { error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+    toast({
+      title: "Logout berhasil",
+      description: "Sampai jumpa lagi!",
+    });
+  };
+
+  const logActivity = async (type: string, description: string, metadata?: any) => {
+    if (!user) return;
+
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      activity_type: type as any,
+      description,
+      metadata,
+      ip_address: null,
+      user_agent: navigator.userAgent,
+    });
+  };
+
+  const value = {
+    user,
+    profile,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    logActivity,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+                                    }        variant: "destructive",
       });
       return { error };
     }
