@@ -11,9 +11,7 @@ export default function NewArticlePage() {
     async function fetchCategories() {
       const { data, error } = await supabase
         .from("categories")
-        .select("*")
-        .eq("is_active", true)
-        .order("order_index", { ascending: true });
+        .select("*");
 
       if (error) {
         console.error("Gagal mengambil kategori:", error.message);
@@ -32,4 +30,4 @@ export default function NewArticlePage() {
       <ArticleForm categories={categories} loading={loading} />
     </div>
   );
-    }
+}
