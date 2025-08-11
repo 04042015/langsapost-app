@@ -1,6 +1,8 @@
+// admin/src/hooks/useAuth.tsx
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchProfile = async (userId: string) => {
     const { data: profile, error } = await supabase
@@ -88,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Login berhasil",
         description: "Selamat datang kembali!",
       });
+      navigate('/dashboard'); // langsung redirect
     }
 
     return { error };
@@ -158,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       title: "Logout berhasil",
       description: "Sampai jumpa lagi!",
     });
+    navigate('/auth');
   };
 
   const logActivity = async (type: string, description: string, metadata?: any) => {
@@ -193,4 +198,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-    }
+      }
