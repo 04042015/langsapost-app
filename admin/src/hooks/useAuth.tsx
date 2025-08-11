@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase'; 
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -10,110 +10,87 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  logs: string[]; // ⬅️ tambahkan logs di context
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // ✅ Tangkap semua console log/error/warn
+  // Ambil session saat komponen pertama kali load
   useEffect(() => {
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    console.log = (...args) => {
-      originalLog(...args);
-      setLogs(prev => [...prev, '📝 LOG: ' + args.join(' ')]);
-    };
-    console.error = (...args) => {
-      originalError(...args);
-      setLogs(prev => [...prev, '❌ ERROR: ' + args.join(' ')]);
-    };
-    console.warn = (...args) => {
-      originalWarn(...args);
-      setLogs(prev => [...prev, '⚠️ WARN: ' + args.join(' ')]);
-    };
-
-    // Tangkap error global
-    window.onerror = (msg, src, lineno, colno, error) => {
-      setLogs(prev => [...prev, `🔥 UNCAUGHT: ${msg} at ${src}:${lineno}:${colno}`]);
-    };
-
-    window.onunhandledrejection = (event) => {
-      setLogs(prev => [...prev, `💥 PROMISE REJECTED: ${event.reason}`]);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-    };
-  }, []);
-
-  // ✅ Ambil session dari Supabase
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session ?? null);
-      setUser(data.session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Error fetching session:", error);
+        alert(`Error fetching session: ${error.message}`);
+      }
+      setSession(session);
+      setUser(session?.user ?? null);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Dengarkan perubahan auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
 
     return () => {
-      listener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log("Sign in attempt:", email);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error("Login failed:", error.message);
-      toast({ title: 'Login gagal', description: error.message, variant: 'destructive' });
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast({ title: "Login berhasil" });
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Something went wrong:", error);
+      alert(`Something went wrong: ${error?.message || JSON.stringify(error)}`);
+      toast({ title: "Login gagal", description: error?.message || "Unknown error", variant: "destructive" });
     }
-    toast({ title: 'Login berhasil', description: 'Anda akan diarahkan...' });
-    navigate('/dashboard');
   };
 
   const signUp = async (email: string, password: string) => {
-    console.log("Sign up attempt:", email);
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      console.error("Sign up failed:", error.message);
-      toast({ title: 'Registrasi gagal', description: error.message, variant: 'destructive' });
-      return;
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      toast({ title: "Registrasi berhasil, silakan cek email konfirmasi" });
+    } catch (error: any) {
+      console.error("Something went wrong:", error);
+      alert(`Something went wrong: ${error?.message || JSON.stringify(error)}`);
+      toast({ title: "Registrasi gagal", description: error?.message || "Unknown error", variant: "destructive" });
     }
-    toast({ title: 'Registrasi berhasil', description: 'Silakan cek email.' });
   };
 
   const signOut = async () => {
-    console.log("Signing out...");
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    navigate('/login');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast({ title: "Logout berhasil" });
+      navigate("/auth");
+    } catch (error: any) {
+      console.error("Something went wrong:", error);
+      alert(`Something went wrong: ${error?.message || JSON.stringify(error)}`);
+      toast({ title: "Logout gagal", description: error?.message || "Unknown error", variant: "destructive" });
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, logs }}>
+    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
   return context;
-    }
+};
