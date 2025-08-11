@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Newspaper, Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
   const { user, signIn, signUp, loading } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,6 +27,7 @@ export default function Auth() {
     );
   }
 
+  // Jika user sudah login, langsung ke dashboard
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -33,26 +35,30 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     const { error } = await signIn(formData.email, formData.password);
-    
     if (error) {
       console.error('Login error:', error.message);
+      alert(`Login gagal: ${error.message}`);
+    } else {
+      navigate('/dashboard');
     }
-    
+
     setIsLoading(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     const { error } = await signUp(formData.email, formData.password, formData.fullName);
-    
     if (error) {
       console.error('Signup error:', error.message);
+      alert(`Pendaftaran gagal: ${error.message}`);
+    } else {
+      navigate('/dashboard');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -193,4 +199,4 @@ export default function Auth() {
       </Card>
     </div>
   );
-    }
+               }
