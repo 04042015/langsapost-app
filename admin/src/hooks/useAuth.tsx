@@ -4,7 +4,16 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase'; 
 import { useToast } from '@/hooks/use-toast';
 
-const AuthContext = createContext<any>(undefined);
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  logs: string[]; // ⬅️ tambahkan logs di context
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -13,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // ✅ Tangkap semua console.log/error/warn
+  // ✅ Tangkap semua console log/error/warn
   useEffect(() => {
     const originalLog = console.log;
     const originalError = console.error;
@@ -48,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // ✅ Ambil session dari Supabase
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session ?? null);
@@ -96,21 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut }}>
-      {/* ✅ DEBUG LOG UI */}
-      <div style={{
-        background: '#000',
-        color: '#0f0',
-        padding: '8px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        maxHeight: '150px',
-        overflowY: 'scroll',
-        whiteSpace: 'pre-wrap'
-      }}>
-        {logs.length === 0 ? '📭 No logs yet...' : logs.join('\n')}
-      </div>
-
+    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, logs }}>
       {children}
     </AuthContext.Provider>
   );
@@ -120,4 +116,4 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
-                      }
+    }
